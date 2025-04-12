@@ -1,0 +1,56 @@
+-|-
+rab|RISD Artists Books
+rabff|RISD Artists Books
+rabfr|RISD Artists Books
+rabg|RISD Artists Books
+rabor|RISD Artists Books
+rabr|RISD Artists Books
+radgi|RISD Graphic Design
+rarch|RISD Archives
+rcol|RISD Color Lab
+rdvdw|RISD DVD writers
+rebk|RISD eBook
+reref|RISD e-Reference
+rff|RISD Special Flat Folio
+rffm|RISD Main Flat Folio
+rfilm|RISD Films
+ribk|RISD iBook computers
+rlf|RISD Special Large Folio
+rmain|RISD MAIN
+rmed|RISD Media
+rmedb|RISD Media in Book
+rmedk|RISD Media Kanopy
+rmedo|RISD Media On Demand
+rmedr|RISD Media in Reserve
+rmeds|RISD Media in Storage
+rmfil|RISD Micro Film
+rmpr|RISD Museum Print Room
+rmucn|RISD Museum Conservation
+rmus|RISD Museum Collection
+rnat|RISD Nature Lab
+rord|RISD Order record
+rover|RISD Oversize
+rpeov|RISD Periodicals Oversize
+rper|RISD Periodicals
+rpere|RISD E-Journal
+rpic|RISD Picture Collection
+rpop|RISD Circulating Pop-Up Books
+rref|RISD Reference
+rreff|RISD Reference Flat Folio
+rrefl|RISD Reference Oversize
+rrfst|RISD REF. Storage
+rrmt|RISD REF. Masters Theses
+rslib|RISD Materials Collection
+rsp|RISD Special
+rspef|RISD Special Periodicals
+rsper|RISD Special Periodicals
+rspov|RISD Special Oversize
+rsprf|RISD Special Reference
+rspzi|RISD Special Zines
+rsrv|RISD Reserve Desk
+rstmp|RISD Storage Masters Theses
+rstor|RISD Storage
+rstov|RISD Storage Oversize
+rtech|RISD Circulating Technology
+rzine|RISD Zines
+multi|Multiple
