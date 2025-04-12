@@ -14,6 +14,9 @@ I know a tiny bit of Python but have primarily been using AI tools to work on co
 I need to review where I'm at with the python as it currently stands.
 Once that's working, I need to test it with some other bib records than the ones I've started with. 
 
+* consider setting up gitignore for files: bib.txt, input.mrc, and output.mrc
+
+
 
 
 
