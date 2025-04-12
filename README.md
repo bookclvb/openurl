@@ -8,8 +8,11 @@ I initially developed a multi-step process for doing this with Bash, with a colo
 
 My process was messy, especially because I had to teach myself a lot of Bash and command line skills, but (eventually) worked. However, I believe it can be done much more elegantly and in fewer steps with Python. 
 
-## current status
 I know a tiny bit of Python but have primarily been using AI tools to work on converting my bash scripts. I expect I'll want to review them with human colleagues eventually, but the stakes are pretty low right now.
+
+## current status
+I need to review where I'm at with the python as it currently stands.
+Once that's working, I need to test it with some other bib records than the ones I've started with. 
 
 
 
