@@ -5,26 +5,36 @@
 MARC to OpenURL Converter
 
 This script converts MARC records to include OpenURL links in 856 fields.
-It extracts all necessary data directly from the MARC records without requiring a separate bibliographic data file.
+It extracts all necessary data directly from the MARC records.
 """
 
 import os
 import re
+import json
+import logging
 from pymarc import MARCReader, Record, Field, Subfield
 
 def read_locations_file(filename):
-    """Read the locations.txt file and return a dictionary of location codes and names."""
+    """Read a JSON locations file mapping code -> name.
+    Falls back to returning an empty dict if the file is missing or invalid.
+    """
     locations = {}
-    with open(filename, 'r', encoding='utf-8') as file:
-        for line in file:
-            if '|' in line:
-                parts = line.strip().split('|')
-                if len(parts) >= 2:
-                    locations[parts[0]] = parts[1]
+    if not filename:
+        return locations
+    try:
+        with open(filename, 'r', encoding='utf-8') as fh:
+            data = json.load(fh)
+            if isinstance(data, dict):
+                locations = {str(k): str(v) for k, v in data.items()}
+            else:
+                print(f"Warning: locations file {filename} does not contain a mapping (code->name)")
+    except FileNotFoundError:
+        print(f"Warning: locations file not found: {filename}")
+    except Exception as e:
+        print(f"Warning: failed to read locations file {filename}: {e}")
     return locations
 
 def sanitize_url_text(text):
-    """Sanitize text for URL usage by replacing spaces and special characters."""
     if not text:
         return ""
     # Replace special characters
@@ -34,7 +44,6 @@ def sanitize_url_text(text):
     text = text.replace(' ', '+')
     return text
 def extract_bib_data_from_marc(record, locations):
-    """Extract bibliographic data directly from a MARC record."""
     # Extract record ID from 907 field
     bibnum = None
     if '907' in record and record['907'] is not None:
@@ -85,12 +94,10 @@ def extract_bib_data_from_marc(record, locations):
     if '998' in record and record['998'] is not None and 'e' in record['998']:
         genre_code = record['998']['e'].strip()
         # Map the genre code to the appropriate genre_raw value
-        # Adjust these mappings based on your catalog's conventions
         if genre_code == "s":  # Serial
             genre_raw = "x"
         elif genre_code in ["d", "f", "p"]:  # Manuscript 
             genre_raw = "b"
-        # You can add more mappings as needed
     
     # Extract location codes from 907 fields
     loc_codes = []
@@ -102,7 +109,7 @@ def extract_bib_data_from_marc(record, locations):
     
     # Join multiple location codes with commas
     joined_loc_code = ",".join(loc_codes)
-    
+
     # Concatenate titles
     x_title = f"{title_a} {title_b}".strip()
     
@@ -126,11 +133,15 @@ def extract_bib_data_from_marc(record, locations):
         i_title = x_title
         x_title = "BLANK"
     
-    # Determine location
-    if len(loc_codes) > 1:
-        location = "Multiple"
+    # Determine location name(s) by mapping each 907 $b code individually
+    if len(loc_codes) == 0:
+        location = ""
+    elif len(loc_codes) == 1:
+        location = locations.get(loc_codes[0], "")
     else:
-        location = locations.get(joined_loc_code, "")
+        mapped = [locations.get(code, code) for code in loc_codes]
+        # Join mapped names with comma and space for readability
+        location = ', '.join(mapped)
     location = sanitize_url_text(location)
     
     # Create the permalink
@@ -151,7 +162,6 @@ def extract_bib_data_from_marc(record, locations):
     }
 
 def build_openurl(bib_data):
-    """Build an OpenURL from the bibliographic data."""
     baseurl = "https://aeon.risd.edu/logon?Action=10&Form=30&"
     
     # Construct the raw URL with all parameters
@@ -188,6 +198,14 @@ def process_marc_file(marc_filename, locations_filename, output_filename):
         output_filename: Path to the output MARC file (.mrc)
     """
     print(f"Starting MARC to OpenURL conversion process...")
+    # Configure logging for skipped records (overwrites each run)
+    logging.basicConfig(
+        filename='skipped_records.log',
+        filemode='a',
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s: %(message)s'
+    )
+    logging.info('Beginning MARC to OpenURL conversion')
     
     # Read locations file
     locations = read_locations_file(locations_filename)
@@ -197,6 +215,7 @@ def process_marc_file(marc_filename, locations_filename, output_filename):
     output_records = []
     record_count = 0
     modified_count = 0
+    skipped_count = 0
     
     with open(marc_filename, 'rb') as marc_file:
         reader = MARCReader(marc_file)
@@ -211,6 +230,7 @@ def process_marc_file(marc_filename, locations_filename, output_filename):
                 openurl = build_openurl(bib_data)
                 
                 # Create a new 856 field with the OpenURL
+                # ALTER LINK TEXT HERE
                 subfields = [
                     Subfield('u', openurl),
                     Subfield('z', 'Special Collections Request')
@@ -222,7 +242,7 @@ def process_marc_file(marc_filename, locations_filename, output_filename):
                     subfields=subfields
                 )
                 
-                # Remove existing 856 fields with same URL pattern (optional)
+                # Remove existing 856 fields with same URL pattern
                 existing_856_fields = record.get_fields('856')
                 for field in existing_856_fields:
                     if field.get_subfields('u') and 'aeon.risd.edu' in field.get_subfields('u')[0]:
@@ -231,6 +251,24 @@ def process_marc_file(marc_filename, locations_filename, output_filename):
                 # Add the new 856 field
                 record.add_field(field_856)
                 modified_count += 1
+            else:
+                # Log skipped records (those missing 907 $a / bibnum)
+                # Prefer controlfield 001 as an identifier; fall back to leader if absent
+                rec_id = None
+                if record.get_fields('001'):
+                    try:
+                        rec_id = record['001'].value()
+                    except Exception:
+                        rec_id = str(record['001'])
+                else:
+                    rec_id = record.leader
+
+                title_snippet = ''
+                if '245' in record and record['245'] is not None and 'a' in record['245']:
+                    title_snippet = record['245']['a']
+
+                logging.info(f"Skipped record missing 907 $a - id={rec_id!s} title={title_snippet}")
+                skipped_count += 1
             
             output_records.append(record)
     
@@ -241,14 +279,15 @@ def process_marc_file(marc_filename, locations_filename, output_filename):
     
     print(f"Processed {record_count} MARC records")
     print(f"Modified {modified_count} records with OpenURLs")
+    print(f"Skipped {skipped_count} records (missing 907 $a). See skipped_records.log for details")
     print(f"Output written to {output_filename}")
 
 def main():
     """Main function to run the script."""
     # Define file paths
-    marc_file = "input.mrc"     # Your input MARC file
-    locations_file = "locations.txt"  # Your locations mapping file
-    output_file = "output.mrc"  # Output MARC file with added OpenURLs
+    marc_file = "input.mrc" 
+    locations_file = "locations.json"
+    output_file = "output.mrc" 
     
     # Run the processing
     process_marc_file(marc_file, locations_file, output_file)

@@ -1,4 +1,0 @@
-RECORD #(BIBLIO)|AUTHOR|TITLE|ADD TITLE|CALL #(BIBLIO)|MAT TYPE|LOCATION
-b10574141|Haring, Keith.|Art in transit : subway drawings / by Keith Haring   photos by Tseng Kwong Chi   introduction by Henry Geldzahler   design by Dan Friedman.||H225A|a  |rabg 
-b10580220|Kaprow, Allan.|Pose : carrying chairs through the city, sitting down here and there, photographed, pix left on spot, going on / [Allan Kaprow].||K14P|a  |rabg 
-b10596999||Threads of hope [videorecording] / produced in association with TVOntario, CKVR TV, Vision TV   written and directed by Andrew Johnson   produced by Les Harris   executive producer, Jane Harris.||NK3034.A1 T57 1996|g  |rmed 
