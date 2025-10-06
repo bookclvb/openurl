@@ -1,0 +1,11 @@
+# gitignore #
+######################################################
+bib.txt
+input.mrc
+output.mrc
+
+# Python virtualenv and caches
+.venv/
+__pycache__/
+*.pyc
+.env
