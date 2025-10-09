@@ -34,6 +34,38 @@ def read_locations_file(filename):
         print(f"Warning: failed to read locations file {filename}: {e}")
     return locations
 
+def read_items_file(filename):
+    """Read items.txt and return a mapping of bibnum -> list of location codes.
+
+    Expected lines are CSV-like with quoted fields, e.g.
+      "b10428094","rstmp"
+    Some lines contain multiple quoted location codes; we collect all quoted strings after the first as codes.
+    """
+    items = {}
+    if not filename:
+        return items
+    try:
+        with open(filename, 'r', encoding='utf-8') as fh:
+            for line in fh:
+                parts = re.findall(r'"([^"]*)"', line)
+                if not parts:
+                    continue
+                bib = parts[0].strip()
+                codes = [p.strip() for p in parts[1:]]
+                if codes:
+                    seen = set()
+                    out = []
+                    for c in codes:
+                        if c and c not in seen:
+                            seen.add(c)
+                            out.append(c)
+                    items[bib] = out
+    except FileNotFoundError:
+        print(f"Warning: items file not found: {filename}")
+    except Exception as e:
+        print(f"Warning: failed to read items file {filename}: {e}")
+    return items
+
 def sanitize_url_text(text):
     if not text:
         return ""
@@ -43,7 +75,7 @@ def sanitize_url_text(text):
     # Replace spaces with plus signs
     text = text.replace(' ', '+')
     return text
-def extract_bib_data_from_marc(record, locations):
+def extract_bib_data_from_marc(record, locations, items_map=None):
     # Extract record ID from 907 field
     bibnum = None
     if '907' in record and record['907'] is not None:
@@ -133,14 +165,30 @@ def extract_bib_data_from_marc(record, locations):
         i_title = x_title
         x_title = "BLANK"
     
-    # Determine location name(s) by mapping each 907 $b code individually
-    if len(loc_codes) == 0:
-        location = ""
-    elif len(loc_codes) == 1:
-        location = locations.get(loc_codes[0], "")
+    # Prefer item-level locations (from items.txt) when available for this bibnum
+    item_loc_codes = None
+    if items_map and bibnum:
+        # items.txt uses bib IDs like b10428094; bibnum is expected to match without dots
+        # ensure we match the exact key
+        candidate = bibnum
+        if candidate in items_map:
+            item_loc_codes = items_map[candidate]
+
+    if item_loc_codes:
+        # use item-level loc codes
+        loc_source = 'items'
+        loc_list = item_loc_codes
     else:
-        mapped = [locations.get(code, code) for code in loc_codes]
-        # Join mapped names with comma and space for readability
+        loc_source = '907'
+        loc_list = loc_codes
+
+    # Map loc_list codes to human-readable names via locations mapping
+    if not loc_list:
+        location = ""
+    elif len(loc_list) == 1:
+        location = locations.get(loc_list[0], loc_list[0])
+    else:
+        mapped = [locations.get(code, code) for code in loc_list]
         location = ', '.join(mapped)
     location = sanitize_url_text(location)
     
@@ -210,6 +258,10 @@ def process_marc_file(marc_filename, locations_filename, output_filename):
     # Read locations file
     locations = read_locations_file(locations_filename)
     print(f"Loaded {len(locations)} location codes from {locations_filename}")
+
+    # Read items file (item-level locations)
+    items_map = read_items_file('items.txt')
+    print(f"Loaded {len(items_map)} item location entries from items.txt")
     
     # Process MARC records
     output_records = []
@@ -223,7 +275,7 @@ def process_marc_file(marc_filename, locations_filename, output_filename):
             record_count += 1
             
             # Extract bibliographic data directly from the MARC record
-            bib_data = extract_bib_data_from_marc(record, locations)
+            bib_data = extract_bib_data_from_marc(record, locations, items_map=items_map)
             
             if bib_data:
                 # Build OpenURL

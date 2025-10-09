@@ -1,6 +1,6 @@
 # gitignore #
 ######################################################
-bib.txt
+items.txt
 input.mrc
 output.mrc
 
