@@ -8,6 +8,7 @@
   "rabr": "RISD Artists Books",
   "radgi": "RISD Graphic Design",
   "rarch": "RISD Archives",
+  "rcirc": "RISD Circulation Desk",
   "rcol": "RISD Color Lab",
   "rdvdw": "RISD DVD writers",
   "rebk": "RISD eBook",
@@ -52,7 +53,6 @@
   "rstmp": "RISD Storage Masters Theses",
   "rstor": "RISD Storage",
   "rstov": "RISD Storage Oversize",
-  "rtech": "RISD Circulating Technology",
   "rzine": "RISD Zines",
   "multi": "Multiple"
 }

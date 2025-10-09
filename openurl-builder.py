@@ -107,18 +107,41 @@ def extract_bib_data_from_marc(record, locations, items_map=None):
     title_a = sanitize_url_text(title_a)
     title_b = sanitize_url_text(title_b)
     
-    # Extract call number from 099 or 050 field
+    # Extract call number from 099 or 050 field.
+    # Collect all subfield values (preserve repeatable subfields) and join them with spaces.
     callnum = ""
-    if '099' in record and record['099'] is not None:
-        if 'a' in record['099']:
-            callnum = record['099']['a']
-            if 'b' in record['099']:
-                callnum += " " + record['099']['b']
-    elif '050' in record and record['050'] is not None:
-        if 'a' in record['050']:
-            callnum = record['050']['a']
-            if 'b' in record['050']:
-                callnum += " " + record['050']['b']
+    # Prefer 099; fall back to 050. Use the first occurrence of the field if multiple exist.
+    call_field = None
+    fields_099 = record.get_fields('099')
+    if fields_099:
+        call_field = fields_099[0]
+    else:
+        fields_050 = record.get_fields('050')
+        if fields_050:
+            call_field = fields_050[0]
+
+    if call_field is not None:
+        # Field.subfields may be either a list of Subfield objects (pymarc newer)
+        # or a flat list like ['a','value','b','value2', ...]. Handle both.
+        raw = call_field.subfields
+        values = []
+        if raw:
+            # detect Subfield objects
+            if all(hasattr(x, 'value') for x in raw):
+                for x in raw:
+                    try:
+                        v = x.value
+                    except Exception:
+                        v = str(x)
+                    if v:
+                        values.append(v)
+            else:
+                # assume flat list and take every second element
+                values = raw[1::2]
+
+        # Join non-empty values with a single space
+        callnum = ' '.join([str(v) for v in values if v])
+
     callnum = sanitize_url_text(callnum)
     
     # Determine genre based on 998 subfield e
